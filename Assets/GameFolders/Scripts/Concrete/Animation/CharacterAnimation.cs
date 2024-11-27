@@ -1,31 +1,26 @@
 using System.Collections;
 using System.Collections.Generic;
-using SeniourProject.Abstract.Animation;
+using SeniorProject.Abstract.Animation;
 using UnityEngine;
 
-namespace SeniourProject.Concrete.Animation{
+namespace SeniorProject.Concrete.Animation{
     public class CharacterAnimation : IAnimation
     {
-        Animator _animator;
+        private Animator _animator;
+        private int moveXAnimationParameterID;
+        private int moveZAnimationParameterID;
 
         public CharacterAnimation(Animator animator)
         {
             _animator = animator;
+            moveXAnimationParameterID = Animator.StringToHash("MoveX");
+            moveZAnimationParameterID = Animator.StringToHash("MoveZ");
         }
 
-        void IAnimation.WalkAnimation()
+        public void MoveAnimation(float moveX, float moveZ)
         {
-            throw new System.NotImplementedException();
-        }
-
-        void IAnimation.RunAnimation()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        void IAnimation.JumpAnimation()
-        {
-            throw new System.NotImplementedException();
+            _animator.SetFloat(moveXAnimationParameterID, moveX);
+            _animator.SetFloat(moveZAnimationParameterID, moveZ);
         }
 
     }

@@ -2,7 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
 using UnityEngine;
-   
+using SeniorProject.Abstract.Animation;
+using SeniorProject.Concrete.Animation;
+
+
+
 [RequireComponent(typeof(CharacterController), typeof(PlayerInput))]
 public class PlayerController : MonoBehaviour
 {   
@@ -34,8 +38,16 @@ public class PlayerController : MonoBehaviour
     private InputAction _jumpAction;
     private InputAction _shootAction;
 
+    //Animation
+    private Animator _animator;
+    private IAnimation _animation;
+    private Vector2 _currentAnimBlendVector;
+    private Vector2 _animVelocity;
+    [SerializeField]
+    private float _animSmoothTime = 0.1f;
+
     private void Awake()
-    {
+    {   
         _characterController = GetComponent<CharacterController>();
         _playerInput = GetComponent<PlayerInput>();
         _cameraTransform = Camera.main.transform;
@@ -43,6 +55,13 @@ public class PlayerController : MonoBehaviour
         _jumpAction = _playerInput.actions["Jump"];
         _shootAction = _playerInput.actions["Shoot"];
 
+        // Animation
+        _animator = gameObject.transform.GetChild(0).GetComponent<Animator>();
+        _animation = new CharacterAnimation(_animator);
+        
+    }
+
+    private void Start() {
         // Lock the mouse cursor
         Cursor.lockState = CursorLockMode.Locked;
     }
@@ -63,13 +82,15 @@ public class PlayerController : MonoBehaviour
             _playerVelocity.y = 0f;
         }
 
-        // Reading Input Value
+        // Reading Input Value and Smooth Damp it
         Vector2 input = _moveAction.ReadValue<Vector2>();
-        Vector3 move = new Vector3(input.x, 0, input.y);
+        _currentAnimBlendVector = Vector2.SmoothDamp(_currentAnimBlendVector, input, ref _animVelocity, _animSmoothTime);
+        Vector3 move = new Vector3(_currentAnimBlendVector.x, 0, _currentAnimBlendVector.y);
         // Move Direction Adjusting and make sure we have no movement through sky !
         move = move.x * _cameraTransform.right.normalized + move.z * _cameraTransform.forward.normalized;
         move.y = 0f;
-        // Move Action
+        // Move Action and Animation
+        _animation.MoveAnimation(_currentAnimBlendVector.x, _currentAnimBlendVector.y);
         _characterController.Move(move * Time.deltaTime * _playerSpeed);
 
         // Jump Action
@@ -102,7 +123,6 @@ public class PlayerController : MonoBehaviour
             bulletController.Target = _cameraTransform.position + _cameraTransform.forward * _bulletHitMissedDis;
             bulletController.Hit = false;
         }
-
     }
 }
 
