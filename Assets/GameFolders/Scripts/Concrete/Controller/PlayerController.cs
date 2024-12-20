@@ -6,7 +6,6 @@ using SeniorProject.Abstract.Animation;
 using SeniorProject.Concrete.Animation;
 
 
-
 [RequireComponent(typeof(CharacterController), typeof(PlayerInput))]
 public class PlayerController : MonoBehaviour
 {   
@@ -27,15 +26,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private float _bulletHitMissedDis = 30f;
 
-    private PlayerInput _playerInput;
+
     private CharacterController _characterController;
     private Vector3 _playerVelocity;
     private bool _isGrounded;
     private Transform _cameraTransform;
 
-    // Input
-    private InputAction _moveAction;
-    private InputAction _jumpAction;
+    // Input System Components
+    private PlayerInput _playerInput;
+    private IPlayerInputHandler _playerInputHandler;
+    private bool _jumpInput;
     private InputAction _shootAction;
 
     //Animation
@@ -49,10 +49,11 @@ public class PlayerController : MonoBehaviour
     private void Awake()
     {   
         _characterController = GetComponent<CharacterController>();
-        _playerInput = GetComponent<PlayerInput>();
         _cameraTransform = Camera.main.transform;
-        _moveAction = _playerInput.actions["Move"];
-        _jumpAction = _playerInput.actions["Jump"];
+
+        //Input
+        _playerInput = GetComponent<PlayerInput>();
+        _playerInputHandler = GetComponent<IPlayerInputHandler>();
         _shootAction = _playerInput.actions["Shoot"];
 
         // Animation
@@ -83,21 +84,36 @@ public class PlayerController : MonoBehaviour
         }
 
         // Reading Input Value and Smooth Damp it
-        Vector2 input = _moveAction.ReadValue<Vector2>();
-        _currentAnimBlendVector = Vector2.SmoothDamp(_currentAnimBlendVector, input, ref _animVelocity, _animSmoothTime);
+        Vector2 moveInput = _playerInputHandler.GetMoveInput();
+        _currentAnimBlendVector = Vector2.SmoothDamp(_currentAnimBlendVector, moveInput, ref _animVelocity, _animSmoothTime);
         Vector3 move = new Vector3(_currentAnimBlendVector.x, 0, _currentAnimBlendVector.y);
         // Move Direction Adjusting and make sure we have no movement through sky !
         move = move.x * _cameraTransform.right.normalized + move.z * _cameraTransform.forward.normalized;
         move.y = 0f;
         // Move Action and Animation
+        if(moveInput != Vector2.zero){
+            _animation.MoveAnimation(_currentAnimBlendVector.x, _currentAnimBlendVector.y);
+        }
+        else{
+            _animation.MoveAnimation(0, 0);
+        }
         _animation.MoveAnimation(_currentAnimBlendVector.x, _currentAnimBlendVector.y);
         _characterController.Move(move * Time.deltaTime * _playerSpeed);
 
         // Jump Action
-        if (Input.GetButtonDown("Jump") && _isGrounded)
+        _jumpInput = _playerInputHandler.GetJumpInput();
+        if (_jumpInput && _isGrounded)
         {
             _playerVelocity.y += Mathf.Sqrt(_jumpHeight * -3.0f * _gravityValue);
         }
+        // Jump Animation
+        _animation.JumpAnimation(!_isGrounded);
+
+        // Fall Animation
+        _animation.FallAnimation(!_isGrounded && _playerVelocity.y < 0);
+        //_animation.FallAnimation(_characterController);
+        // Land Animation
+        //_animation.LandAnimation(_isGrounded);
         // Gravity Action
         _playerVelocity.y += _gravityValue * Time.deltaTime;
         _characterController.Move(_playerVelocity * Time.deltaTime);
@@ -107,6 +123,7 @@ public class PlayerController : MonoBehaviour
         Quaternion rotation = Quaternion.Euler(0f, targetAngle, 0f);
         transform.rotation = Quaternion.Lerp(transform.rotation, rotation, _rotationSpeed * Time.deltaTime);
     }
+
 
     private void ShootGun(){
         // Layer tag and distance will be added

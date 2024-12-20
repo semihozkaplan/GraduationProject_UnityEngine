@@ -15,7 +15,7 @@ namespace SeniorProject.Concrete.Animation{
             _animator = animator;
             moveXAnimationParameterID = Animator.StringToHash("MoveX");
             moveZAnimationParameterID = Animator.StringToHash("MoveZ");
-        }
+        }   
 
         public void MoveAnimation(float moveX, float moveZ)
         {
@@ -23,6 +23,26 @@ namespace SeniorProject.Concrete.Animation{
             _animator.SetFloat(moveZAnimationParameterID, moveZ);
         }
 
+        public void JumpAnimation(bool isJumping)
+        {
+            if(_animator.GetBool("isJumping") == isJumping)
+                return;
+
+            _animator.SetBool("isJumping", isJumping);
+        }
+
+        public void FallAnimation(bool isFalling)
+        {
+            if(_animator.GetBool("isFalling") == isFalling)
+                return;
+            
+            _animator.SetBool("isFalling", isFalling);
+        }
+
+        public void LandAnimation(bool isLanding)
+        {
+            //Will be implemented
+        }
     }
 }
 
